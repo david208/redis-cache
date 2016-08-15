@@ -1,5 +1,5 @@
 /**
- *    Copyright 2015 the original author or authors.
+ *    Copyright 2015-2016 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,13 +15,15 @@
  */
 package org.mybatis.caches.redis;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import org.apache.ibatis.cache.Cache;
 
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
 
 /**
  * Cache adapter for Redis.
@@ -30,99 +32,112 @@ import redis.clients.jedis.JedisPool;
  */
 public final class RedisCache implements Cache {
 
-  private final ReadWriteLock readWriteLock = new DummyReadWriteLock();
+	private final ReadWriteLock readWriteLock = new DummyReadWriteLock();
 
-  private String id;
+	private String id;
 
-  private static JedisPool pool;
 
-  public RedisCache(final String id) {
-    if (id == null) {
-      throw new IllegalArgumentException("Cache instances require an ID");
-    }
-    this.id = id;
-    RedisConfig redisConfig = RedisConfigurationBuilder.getInstance().parseConfiguration();
-	pool = new JedisPool(redisConfig, redisConfig.getHost(), redisConfig.getPort(),
-			redisConfig.getConnectionTimeout(), redisConfig.getSoTimeout(), redisConfig.getPassword(),
-			redisConfig.getDatabase(), redisConfig.getClientName());
-  }
+	private  JedisCluster cluster;
 
-  private Object execute(RedisCallback callback) {
-    Jedis jedis = pool.getResource();
-    try {
-      return callback.doWithRedis(jedis);
-    } finally {
-      jedis.close();
-    }
-  }
+	public RedisCache(final String id) {
+		if (id == null) {
+			throw new IllegalArgumentException("Cache instances require an ID");
+		}
+		this.id = id;
+		RedisConfig redisConfig = RedisConfigurationBuilder.getInstance().parseConfiguration();
+		// Jedis Cluster will attempt to discover cluster nodes automatically
 
-  @Override
-  public String getId() {
-    return this.id;
-  }
+		cluster =JedisClusterFactory.getInstance(parseJedisClusterNodes(redisConfig.getHost(), ",", ":"));
+	}
 
-  @Override
-  public int getSize() {
-    return (Integer) execute(new RedisCallback() {
-      @Override
-      public Object doWithRedis(Jedis jedis) {
-        Map<byte[], byte[]> result = jedis.hgetAll(id.toString().getBytes());
-        return result.size();
-      }
-    });
-  }
+	private Object execute(RedisCallback callback) {
+		return callback.doWithRedis(cluster);	
+	}
 
-  @Override
-  public void putObject(final Object key, final Object value) {
-    execute(new RedisCallback() {
-      @Override
-      public Object doWithRedis(Jedis jedis) {
-        jedis.hset(id.toString().getBytes(), key.toString().getBytes(), SerializeUtil.serialize(value));
-        return null;
-      }
-    });
-  }
+	private static Set<HostAndPort> parseJedisClusterNodes(String jedisClusterNodes, String delim, String flag) {
+		if (null == jedisClusterNodes || jedisClusterNodes.length() == 0)
+			return null;
+		Set<HostAndPort> jedisClusterNodeSet = new HashSet<HostAndPort>();
+		String[] clusterNodeArray = jedisClusterNodes.split(delim);
+		for (int i = 0; i < clusterNodeArray.length; i++) {
+			String clusterNode = clusterNodeArray[i];
+			if (clusterNode.contains(":")) {
+				String[] nodeInfo = clusterNode.split(flag);
+				jedisClusterNodeSet.add(new HostAndPort(nodeInfo[0], Integer.valueOf(nodeInfo[1])));
+			} else {
+				jedisClusterNodeSet.add(new HostAndPort(clusterNode, 6379));
+			}
+		}
+		return jedisClusterNodeSet;
+	}
 
-  @Override
-  public Object getObject(final Object key) {
-    return execute(new RedisCallback() {
-      @Override
-      public Object doWithRedis(Jedis jedis) {
-        return SerializeUtil.unserialize(jedis.hget(id.toString().getBytes(), key.toString().getBytes()));
-      }
-    });
-  }
+	@Override
+	public String getId() {
+		return this.id;
+	}
 
-  @Override
-  public Object removeObject(final Object key) {
-    return execute(new RedisCallback() {
-      @Override
-      public Object doWithRedis(Jedis jedis) {
-        return jedis.hdel(id.toString(), key.toString());
-      }
-    });
-  }
+	@Override
+	public int getSize() {
+		return (Integer) execute(new RedisCallback() {
+			@Override
+			public Object doWithRedis(JedisCluster jedisCluster) {
+				Map<byte[], byte[]> result = jedisCluster.hgetAll(id.toString().getBytes());
+				return result.size();
+			}
+		});
+	}
 
-  @Override
-  public void clear() {
-    execute(new RedisCallback() {
-      @Override
-      public Object doWithRedis(Jedis jedis) {
-        jedis.del(id.toString());
-        return null;
-      }
-    });
+	@Override
+	public void putObject(final Object key, final Object value) {
+		execute(new RedisCallback() {
+			@Override
+			public Object doWithRedis(JedisCluster jedisCluster) {
+				jedisCluster.hset(id.toString().getBytes(), key.toString().getBytes(), SerializeUtil.serialize(value));
+				return null;
+			}
+		});
+	}
 
-  }
+	@Override
+	public Object getObject(final Object key) {
+		return execute(new RedisCallback() {
+			@Override
+			public Object doWithRedis(JedisCluster jedisCluster) {
+				return SerializeUtil.unserialize(jedisCluster.hget(id.toString().getBytes(), key.toString().getBytes()));
+			}
+		});
+	}
 
-  @Override
-  public ReadWriteLock getReadWriteLock() {
-    return readWriteLock;
-  }
+	@Override
+	public Object removeObject(final Object key) {
+		return execute(new RedisCallback() {
+			@Override
+			public Object doWithRedis(JedisCluster jedisCluster) {
+				return jedisCluster.hdel(id.toString(), key.toString());
+			}
+		});
+	}
 
-  @Override
-  public String toString() {
-    return "Redis {" + id + "}";
-  }
+	@Override
+	public void clear() {
+		execute(new RedisCallback() {
+			@Override
+			public Object doWithRedis(JedisCluster jedisCluster) {
+				jedisCluster.del(id.toString());
+				return null;
+			}
+		});
+
+	}
+
+	@Override
+	public ReadWriteLock getReadWriteLock() {
+		return readWriteLock;
+	}
+
+	@Override
+	public String toString() {
+		return "Redis {" + id + "}";
+	}
 
 }
