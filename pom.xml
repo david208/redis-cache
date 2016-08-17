@@ -16,140 +16,175 @@
        limitations under the License.
 
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<!-- Copyright 2015-2016 the original author or authors. Licensed under the 
+	Apache License, Version 2.0 (the "License"); you may not use this file except 
+	in compliance with the License. You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 
+	Unless required by applicable law or agreed to in writing, software distributed 
+	under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES 
+	OR CONDITIONS OF ANY KIND, either express or implied. See the License for 
+	the specific language governing permissions and limitations under the License. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>org.mybatis</groupId>
-    <artifactId>mybatis-parent</artifactId>
-    <version>28-SNAPSHOT</version>
-    <relativePath />
-  </parent>
+	<parent>
+		<groupId>org.mybatis</groupId>
+		<artifactId>mybatis-parent</artifactId>
+		<version>28-SNAPSHOT</version>
+		<relativePath />
+	</parent>
 
-  <groupId>org.mybatis.caches</groupId>
-  <artifactId>mybatis-redis</artifactId>
-  <version>1.0.0-yizhen1-SNAPSHOT</version>
-  <packaging>jar</packaging>
+	<groupId>org.mybatis.caches</groupId>
+	<artifactId>mybatis-redis</artifactId>
+	<version>1.0.0-yizhen1-SNAPSHOT</version>
+	<packaging>jar</packaging>
 
-  <name>mybatis-redis</name>
-  <description>Redis support for MyBatis Cache</description>
-  <url>https://github.com/mybatis/redis-cache</url>
+	<name>mybatis-redis</name>
+	<description>Redis support for MyBatis Cache</description>
+	<url>https://github.com/mybatis/redis-cache</url>
 
-  <inceptionYear>2015</inceptionYear>
+	<inceptionYear>2015</inceptionYear>
 
-  <scm>
-    <url>http://github.com/mybatis/redis-cache</url>
-    <connection>scm:git:ssh://github.com/mybatis/redis-cache.git</connection>
-    <developerConnection>scm:git:ssh://git@github.com/mybatis/redis-cache.git</developerConnection>
-    <tag>HEAD</tag>
-  </scm>
-  <issueManagement>
-    <system>GitHub Issue Management</system>
-    <url>https://github.com/mybatis/redis-cache/issues</url>
-  </issueManagement>
-  <ciManagement>
-    <system>Travis CI</system>
-    <url>https://travis-ci.org/mybatis/redis-cache</url>
-  </ciManagement>
-  <distributionManagement>
-    <site>
-      <id>gh-pages</id>
-      <name>Mybatis GitHub Pages</name>
-      <url>git:ssh://git@github.com/mybatis/redis-cache.git?gh-pages#</url>
-    </site>
-  </distributionManagement>
+	<scm>
+		<url>http://github.com/mybatis/redis-cache</url>
+		<connection>scm:git:ssh://github.com/mybatis/redis-cache.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com/mybatis/redis-cache.git</developerConnection>
+		<tag>HEAD</tag>
+	</scm>
+	<issueManagement>
+		<system>GitHub Issue Management</system>
+		<url>https://github.com/mybatis/redis-cache/issues</url>
+	</issueManagement>
+	<ciManagement>
+		<system>Travis CI</system>
+		<url>https://travis-ci.org/mybatis/redis-cache</url>
+	</ciManagement>
 
-  <properties>
-    <clirr.comparisonVersion>1.0.3</clirr.comparisonVersion>
-    <findbugs.onlyAnalyze>org.mybatis.caches.redis.*</findbugs.onlyAnalyze>
-    <gcu.product>Cache</gcu.product>
-  </properties>
+	<distributionManagement>
+		<repository>
+			<id>nexus-releases</id>
+			<name>Team Nexus public Repository</name>
+			<url>http://192.168.220.207:8081/content/repositories/releases/</url>
+		</repository>
+		<snapshotRepository>
+			<uniqueVersion>true</uniqueVersion>
+			<id>nexus-snapshots</id>
+			<name>Snapshots</name>
+			<url>http://192.168.220.207:8081/content/repositories/snapshots/</url>
+			<layout>default</layout>
+		</snapshotRepository>
+	</distributionManagement>
 
-  <dependencies>
-    <!--
-     | Provided dependencies
-    -->
-    <dependency>
-      <groupId>org.mybatis</groupId>
-      <artifactId>mybatis</artifactId>
-      <version>3.4.1</version>
-      <scope>provided</scope>
-    </dependency>
+	<repositories>
+		<repository>
+			<releases>
+				<enabled>false</enabled>
+				<updatePolicy>always</updatePolicy>
+				<checksumPolicy>warn</checksumPolicy>
+			</releases>
+			<snapshots>
+				<enabled>true</enabled>
+				<updatePolicy>never</updatePolicy>
+				<checksumPolicy>fail</checksumPolicy>
+			</snapshots>
+			<id>snapshots</id>
+			<name>Snapshots</name>
+			<url>http://192.168.220.207:8081/content/repositories/snapshots/</url>
+			<layout>default</layout>
+		</repository>
+	</repositories>
 
-    <!--
-     | compile dependencies
-    -->
-	<dependency>
-      <groupId>redis.clients</groupId>
-      <artifactId>jedis</artifactId>
-      <version>2.8.1</version>
-      <scope>compile</scope>
-	</dependency>
+	<properties>
+		<clirr.comparisonVersion>1.0.3</clirr.comparisonVersion>
+		<findbugs.onlyAnalyze>org.mybatis.caches.redis.*</findbugs.onlyAnalyze>
+		<gcu.product>Cache</gcu.product>
+	</properties>
 
-    <!--
-     | trick to fix javadoc generation
-    -->
-    <dependency>
-      <groupId>javax.transaction</groupId>
-      <artifactId>transaction-api</artifactId>
-      <version>1.1</version>
-      <scope>provided</scope>
-    </dependency>
+	<dependencies>
+		<!-- | Provided dependencies -->
+		<dependency>
+			<groupId>org.mybatis</groupId>
+			<artifactId>mybatis</artifactId>
+			<version>3.4.1</version>
+			<scope>provided</scope>
+		</dependency>
 
-    <!--
-     | test dependencies
-    -->
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.12</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <version>1.7.21</version>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
+		<!-- | compile dependencies -->
+		<dependency>
+			<groupId>redis.clients</groupId>
+			<artifactId>jedis</artifactId>
+			<version>2.8.1</version>
+			<scope>compile</scope>
+		</dependency>
 
-  <profiles>
-    <profile>
-      <id>noTest</id>
-      <activation>
-        <property>
-          <name>noTest</name>
-          <value>true</value>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <skipTests>true</skipTests>
-            </configuration>
-          </plugin>
-          <!-- 要将源码放上去，需要加入这个插件 -->
-			<plugin>
-				<artifactId>maven-source-plugin</artifactId>
-				<version>2.1</version>
-				<configuration>
-					<attach>true</attach>
-				</configuration>
-				<executions>
-					<execution>
-						<phase>compile</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
+		<!-- | trick to fix javadoc generation -->
+		<dependency>
+			<groupId>javax.transaction</groupId>
+			<artifactId>transaction-api</artifactId>
+			<version>1.1</version>
+			<scope>provided</scope>
+		</dependency>
+
+
+		<dependency>
+			<groupId>com.yizhenmoney.damocles</groupId>
+			<artifactId>damocles-configcenter-client</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<!-- | test dependencies -->
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.12</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-simple</artifactId>
+			<version>1.7.21</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<profiles>
+		<profile>
+			<id>noTest</id>
+			<activation>
+				<property>
+					<name>noTest</name>
+					<value>true</value>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<skipTests>true</skipTests>
+						</configuration>
+					</plugin>
+					<!-- 要将源码放上去，需要加入这个插件 -->
+					<plugin>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>2.1</version>
+						<configuration>
+							<attach>true</attach>
+						</configuration>
+						<executions>
+							<execution>
+								<phase>compile</phase>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>

@@ -21,6 +21,8 @@ import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import org.apache.ibatis.cache.Cache;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisCluster;
@@ -36,22 +38,25 @@ public final class RedisCache implements Cache {
 
 	private String id;
 
+	private JedisCluster cluster;
 
-	private  JedisCluster cluster;
+	@Value("${redis.cluster.nodes}")
+	private String redisCluster;
 
 	public RedisCache(final String id) {
 		if (id == null) {
 			throw new IllegalArgumentException("Cache instances require an ID");
 		}
-		this.id = id;
+
 		RedisConfig redisConfig = RedisConfigurationBuilder.getInstance().parseConfiguration();
+		this.id = redisConfig.getClientName() + "_" + id;
 		// Jedis Cluster will attempt to discover cluster nodes automatically
 
-		cluster =JedisClusterFactory.getInstance(parseJedisClusterNodes(redisConfig.getHost(), ",", ":"));
+		cluster = JedisClusterFactory.getInstance(parseJedisClusterNodes(redisConfig.getHost(), ",", ":"));
 	}
 
 	private Object execute(RedisCallback callback) {
-		return callback.doWithRedis(cluster);	
+		return callback.doWithRedis(cluster);
 	}
 
 	private static Set<HostAndPort> parseJedisClusterNodes(String jedisClusterNodes, String delim, String flag) {
@@ -103,7 +108,8 @@ public final class RedisCache implements Cache {
 		return execute(new RedisCallback() {
 			@Override
 			public Object doWithRedis(JedisCluster jedisCluster) {
-				return SerializeUtil.unserialize(jedisCluster.hget(id.toString().getBytes(), key.toString().getBytes()));
+				return SerializeUtil
+						.unserialize(jedisCluster.hget(id.toString().getBytes(), key.toString().getBytes()));
 			}
 		});
 	}

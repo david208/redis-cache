@@ -1,5 +1,5 @@
 /**
- *    Copyright 2015 the original author or authors.
+ *    Copyright 2015-2016 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ final class RedisConfigurationBuilder {
 	public RedisConfig parseConfiguration(ClassLoader classLoader) {
 		Properties config = new Properties();
 
-		InputStream input = classLoader.getResourceAsStream(redisPropertiesFilename);
+		/*InputStream input = classLoader.getResourceAsStream(redisPropertiesFilename);
 		if (input != null) {
 			try {
 				config.load(input);
@@ -94,10 +94,10 @@ final class RedisConfigurationBuilder {
 					// close quietly
 				}
 			}
-		}
+		}*/
 
-		RedisConfig jedisConfig = new RedisConfig();
-		setConfigProperties(config, jedisConfig);
+		RedisConfig jedisConfig = RedisPropertyPlaceholderCallback.getRedisConfig();
+		/*setConfigProperties(config, jedisConfig);*/
 		return jedisConfig;
 	}
 
