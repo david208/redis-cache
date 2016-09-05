@@ -15,114 +15,127 @@
  */
 package org.mybatis.caches.redis;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import org.apache.ibatis.cache.Cache;
 
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
 
 /**
  * Cache adapter for Redis.
  *
  * @author Eduardo Macarron
+ * @modify david208
  */
 public final class RedisCache implements Cache {
 
-  private final ReadWriteLock readWriteLock = new DummyReadWriteLock();
+	private final ReadWriteLock readWriteLock = new DummyReadWriteLock();
 
-  private String id;
+	private String id;
 
-  private static JedisPool pool;
+	private JedisCluster cluster;
 
-  public RedisCache(final String id) {
-    if (id == null) {
-      throw new IllegalArgumentException("Cache instances require an ID");
-    }
-    this.id = id;
-    RedisConfig redisConfig = RedisConfigurationBuilder.getInstance().parseConfiguration();
-	pool = new JedisPool(redisConfig, redisConfig.getHost(), redisConfig.getPort(),
-			redisConfig.getConnectionTimeout(), redisConfig.getSoTimeout(), redisConfig.getPassword(),
-			redisConfig.getDatabase(), redisConfig.getClientName());
-  }
+	public RedisCache(final String id) {
+		if (id == null) {
+			throw new IllegalArgumentException("Cache instances require an ID");
+		}
+		RedisConfig redisConfig = RedisConfigurationBuilder.getInstance().parseConfiguration();
+		this.id = (null == redisConfig.getClientName()) ? id : redisConfig.getClientName() + "_" + id;
+		cluster = JedisClusterFactory.getInstance(parseJedisClusterNodes(redisConfig.getHost(), ",", ":"),
+				redisConfig.getTimeout());
+	}
 
-  private Object execute(RedisCallback callback) {
-    Jedis jedis = pool.getResource();
-    try {
-      return callback.doWithRedis(jedis);
-    } finally {
-      jedis.close();
-    }
-  }
+	private Object execute(RedisCallback callback) {
+		return callback.doWithRedis(cluster);
+	}
 
-  @Override
-  public String getId() {
-    return this.id;
-  }
+	@Override
+	public String getId() {
+		return this.id;
+	}
 
-  @Override
-  public int getSize() {
-    return (Integer) execute(new RedisCallback() {
-      @Override
-      public Object doWithRedis(Jedis jedis) {
-        Map<byte[], byte[]> result = jedis.hgetAll(id.toString().getBytes());
-        return result.size();
-      }
-    });
-  }
+	@Override
+	public int getSize() {
+		return (Integer) execute(new RedisCallback() {
+			@Override
+			public Object doWithRedis(JedisCluster cluster) {
+				Map<byte[], byte[]> result = cluster.hgetAll(id.toString().getBytes());
+				return result.size();
+			}
+		});
+	}
 
-  @Override
-  public void putObject(final Object key, final Object value) {
-    execute(new RedisCallback() {
-      @Override
-      public Object doWithRedis(Jedis jedis) {
-        jedis.hset(id.toString().getBytes(), key.toString().getBytes(), SerializeUtil.serialize(value));
-        return null;
-      }
-    });
-  }
+	@Override
+	public void putObject(final Object key, final Object value) {
+		execute(new RedisCallback() {
+			@Override
+			public Object doWithRedis(JedisCluster cluster) {
+				cluster.hset(id.toString().getBytes(), key.toString().getBytes(), SerializeUtil.serialize(value));
+				return null;
+			}
+		});
+	}
 
-  @Override
-  public Object getObject(final Object key) {
-    return execute(new RedisCallback() {
-      @Override
-      public Object doWithRedis(Jedis jedis) {
-        return SerializeUtil.unserialize(jedis.hget(id.toString().getBytes(), key.toString().getBytes()));
-      }
-    });
-  }
+	@Override
+	public Object getObject(final Object key) {
+		return execute(new RedisCallback() {
+			@Override
+			public Object doWithRedis(JedisCluster cluster) {
+				return SerializeUtil.unserialize(cluster.hget(id.toString().getBytes(), key.toString().getBytes()));
+			}
+		});
+	}
 
-  @Override
-  public Object removeObject(final Object key) {
-    return execute(new RedisCallback() {
-      @Override
-      public Object doWithRedis(Jedis jedis) {
-        return jedis.hdel(id.toString(), key.toString());
-      }
-    });
-  }
+	@Override
+	public Object removeObject(final Object key) {
+		return execute(new RedisCallback() {
+			@Override
+			public Object doWithRedis(JedisCluster cluster) {
+				return cluster.hdel(id.toString(), key.toString());
+			}
+		});
+	}
 
-  @Override
-  public void clear() {
-    execute(new RedisCallback() {
-      @Override
-      public Object doWithRedis(Jedis jedis) {
-        jedis.del(id.toString());
-        return null;
-      }
-    });
+	@Override
+	public void clear() {
+		execute(new RedisCallback() {
+			@Override
+			public Object doWithRedis(JedisCluster cluster) {
+				cluster.del(id.toString());
+				return null;
+			}
+		});
 
-  }
+	}
 
-  @Override
-  public ReadWriteLock getReadWriteLock() {
-    return readWriteLock;
-  }
+	@Override
+	public ReadWriteLock getReadWriteLock() {
+		return readWriteLock;
+	}
 
-  @Override
-  public String toString() {
-    return "Redis {" + id + "}";
-  }
+	@Override
+	public String toString() {
+		return "Redis {" + id + "}";
+	}
 
+	private static Set<HostAndPort> parseJedisClusterNodes(String jedisClusterNodes, String delim, String flag) {
+		if (null == jedisClusterNodes || jedisClusterNodes.length() == 0)
+			return null;
+		Set<HostAndPort> jedisClusterNodeSet = new HashSet<HostAndPort>();
+		String[] clusterNodeArray = jedisClusterNodes.split(delim);
+		for (int i = 0; i < clusterNodeArray.length; i++) {
+			String clusterNode = clusterNodeArray[i];
+			if (clusterNode.contains(":")) {
+				String[] nodeInfo = clusterNode.split(flag);
+				jedisClusterNodeSet.add(new HostAndPort(nodeInfo[0], Integer.valueOf(nodeInfo[1])));
+			} else {
+				jedisClusterNodeSet.add(new HostAndPort(clusterNode, 6379));
+			}
+		}
+		return jedisClusterNodeSet;
+	}
 }

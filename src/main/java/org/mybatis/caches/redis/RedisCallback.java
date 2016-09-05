@@ -15,9 +15,9 @@
  */
 package org.mybatis.caches.redis;
 
-import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisCluster;
 
 public interface RedisCallback {
 
-	Object doWithRedis(Jedis jedis);
+	Object doWithRedis(JedisCluster cluster);
 }

@@ -20,12 +20,22 @@ import redis.clients.jedis.Protocol;
 
 public class RedisConfig extends JedisPoolConfig {
 
+	/**
+	 * 集群集合，例子：192.168.220.161:7000,192.168.220.162:7000,192.168.220.166:7000
+	 */
 	private String host = Protocol.DEFAULT_HOST;
-	private int port = Protocol.DEFAULT_PORT;
-	private int connectionTimeout = Protocol.DEFAULT_TIMEOUT;
-	private int soTimeout = Protocol.DEFAULT_TIMEOUT;
+	private int timeout = Protocol.DEFAULT_TIMEOUT;
+	/**
+	 * 集群不支持
+	 */
 	private String password;
+	/**
+	 * 集群不支持
+	 */
 	private int database = Protocol.DEFAULT_DATABASE;
+	/**
+	 *  namespace
+	 */
 	private String clientName;
 
 	public String getHost() {
@@ -37,14 +47,6 @@ public class RedisConfig extends JedisPoolConfig {
 			host = Protocol.DEFAULT_HOST;
 		}
 		this.host = host;
-	}
-
-	public int getPort() {
-		return port;
-	}
-
-	public void setPort(int port) {
-		this.port = port;
 	}
 
 	public String getPassword() {
@@ -77,20 +79,12 @@ public class RedisConfig extends JedisPoolConfig {
 		this.clientName = clientName;
 	}
 
-	public int getConnectionTimeout() {
-		return connectionTimeout;
+	public int getTimeout() {
+		return timeout;
 	}
 
-	public void setConnectionTimeout(int connectionTimeout) {
-		this.connectionTimeout = connectionTimeout;
-	}
-
-	public int getSoTimeout() {
-		return soTimeout;
-	}
-
-	public void setSoTimeout(int soTimeout) {
-		this.soTimeout = soTimeout;
+	public void setTimeout(int timeout) {
+		this.timeout = timeout;
 	}
 
 }

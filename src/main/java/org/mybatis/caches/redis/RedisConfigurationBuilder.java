@@ -108,6 +108,8 @@ final class RedisConfigurationBuilder {
 			for (Map.Entry<Object, Object> entry : properties.entrySet()) {
 				String name = (String) entry.getKey();
 				String value = (String) entry.getValue();
+				if(null == value || value.isEmpty())
+					continue;
 				if (metaCache.hasSetter(name)) {
 					Class<?> type = metaCache.getSetterType(name);
 					if (String.class == type) {
