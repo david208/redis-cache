@@ -13,5 +13,15 @@ MyBatis-Redis extension Redis support for MyBatis Cache.
 
 Essentials
 ----------
+* 配置文件redis.properties 
+* host=localhost:7000,localhost:7001,localhost:7002
+* timeout=5000
+* clientName=
 
-* [See the docs](http://mybatis.github.io/redis-cache/)
+----------
+### mapper文件增加 
+         <mapper>
+                <cache eviction="LRU" flushInterval="180000" readOnly="false" size="9216" type="org.mybatis.caches.redis.RedisCache">
+                 </cache>
+         </mapper>
+----------
