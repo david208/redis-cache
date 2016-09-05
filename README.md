@@ -15,11 +15,9 @@ Essentials
 ----------
 
 * 配置文件redis.properties 
-* host=localhost:7000,localhost:7001,localhost:7002
+host=localhost:7000,localhost:7001,localhost:7002
 timeout=5000
 clientName=
-
-
 
 * <cache eviction="LRU" flushInterval="180000" readOnly="false" size="9216" type="org.mybatis.caches.redis.RedisCache">
   </cache>
